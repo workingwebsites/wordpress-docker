@@ -1,0 +1,70 @@
+#Which version of docker-compose are we using?
+version: '3.1'
+#Services we're building
+services:
+    #Build the site
+    wpdocker_site:
+        #Get image from the Docker repository.
+        image: wordpress:latest
+        #Parameters to use for WordPress.  Same as in the database
+        environment:
+            WORDPRESS_DB_HOST: wpdocker_db
+            WORDPRESS_DB_NAME: wpdocker
+            WORDPRESS_DB_USER: wpdockeruser
+            WORDPRESS_DB_PASSWORD: wpdockerpassword
+      
+        #Put the files in this directory on the server
+        working_dir: /var/www/html
+        
+        #Give this service a name we understand
+        container_name: WPDocker_Site
+        #View the site at http://localhost:8000
+        ports:
+            - "8000:80"
+          
+        #Hook into mysql.  Uses sevice name 
+        depends_on:
+            - wpdocker_db
+        #Use wp-content from your computer
+        volumes:
+            - C:/Websites/WPDocker/wp-content/:/var/www/html/wp-content            
+            
+        #Keep on same network
+        networks:
+            - wpdocker-network
+        
+    #Build the database
+    wpdocker_db: 
+        #MySQL Version
+        image: mysql:5.7
+        #Give it a name
+        container_name: WPDocker_Dbase
+        #Store the data on a volume so we don't lose it
+        volumes:
+            - wpdocker_data:/var/lib/mysql
+        
+        #Only start when needed
+        restart: on-failure
+        #Logins for database.  Used in site (Wordpress)
+        environment:
+            MYSQL_ROOT_PASSWORD: rootpass
+            MYSQL_DATABASE: wpdocker
+            MYSQL_USER: wpdockeruser
+            MYSQL_PASSWORD: wpdockerpassword
+        
+        #Access through localhost port 3306 -- standard MySQL port
+        ports:
+            - "1020:3306"
+        #Keep on same network
+        networks:
+            - wpdocker-network
+networks:
+    #Give it a name, used in elsewhere in this file
+    wpdocker-network: 
+        driver: bridge
+    
+        
+volumes:
+    #Don't lose data when you shut down.  It's a volume
+    wpdocker_data: {}
+    
